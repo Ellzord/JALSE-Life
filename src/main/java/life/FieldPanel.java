@@ -1,21 +1,22 @@
 package life;
 
+import jalse.DefaultJALSE;
+import jalse.JALSE;
 import life.actions.Update;
 import life.entities.Cell;
-import life.entities.Cell.LiveCell;
 import life.entities.Cell.DeadCell;
+import life.entities.Cell.LiveCell;
 import life.entities.Field;
-import jalse.JALSE;
 
 import javax.swing.*;
-import javax.swing.Timer;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.util.*;
+import java.util.LinkedHashSet;
+import java.util.Random;
+import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.TimeUnit;
-
-import static jalse.JALSEBuilder.buildManualJALSE;
 
 public class FieldPanel extends JPanel implements ActionListener {
 
@@ -38,7 +39,7 @@ public class FieldPanel extends JPanel implements ActionListener {
 
   public FieldPanel() {
     random = new Random();
-    jalse = buildManualJALSE();
+    jalse = new DefaultJALSE.Builder().setManualEngine().build();
     createEntities();
     setPreferredSize(getField().getSize());
     new Timer(1000 / 30, this).start();
@@ -105,8 +106,6 @@ public class FieldPanel extends JPanel implements ActionListener {
   @Override
   public void actionPerformed(ActionEvent e) {
     jalse.resume();
-
-    // Request repaint
     repaint();
   }
 }
