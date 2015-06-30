@@ -1,5 +1,7 @@
 package life;
 
+import life.entities.ControlPanel;
+
 import javax.swing.*;
 import java.awt.*;
 
@@ -10,6 +12,7 @@ public class Life {
     frame.setLayout(new BorderLayout());
     final FieldPanel fieldPanel = new FieldPanel();
     frame.add(fieldPanel, BorderLayout.CENTER);
+    frame.add(new ControlPanel(fieldPanel), BorderLayout.EAST);
     frame.pack();
     frame.setResizable(false);
     frame.setLocationRelativeTo(null);

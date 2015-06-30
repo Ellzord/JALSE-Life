@@ -20,6 +20,9 @@ import java.util.concurrent.TimeUnit;
 
 public class FieldPanel extends JPanel implements ActionListener {
 
+  public static final int DEFAULT_SPEED = 1000/30;
+  public static final double DEFAULT_THRESHOLD = 0.15;
+
   public static final int HEIGHT = 500;
   public static final int WIDTH = 700;
 
@@ -28,6 +31,7 @@ public class FieldPanel extends JPanel implements ActionListener {
 
   private final JALSE jalse;
   private final Random random;
+  private final Timer timer;
 
   private static void drawElement(final Graphics g, final Cell cell) {
     final Point position = cell.getPosition();
@@ -42,7 +46,7 @@ public class FieldPanel extends JPanel implements ActionListener {
     jalse = new DefaultJALSE.Builder().setManualEngine().build();
     createEntities();
     setPreferredSize(getField().getSize());
-    new Timer(1000 / 30, this).start();
+    timer = new Timer(DEFAULT_SPEED, this);
   }
 
   private void createEntities() {
@@ -60,11 +64,12 @@ public class FieldPanel extends JPanel implements ActionListener {
         cells[row][col] = cell;
       }
     }
-    field.streamCells().forEach(c -> initialize(c, cells));
+    field.streamCells().forEach(c -> setNeighbors(c, cells));
+    seedField(DEFAULT_THRESHOLD);
     field.scheduleForActor(new Update(), 0, 1000, TimeUnit.MILLISECONDS);
   }
 
-  private void initialize(Cell cell, Cell[][] cells) {
+  private void setNeighbors(Cell cell, Cell[][] cells) {
     Set<Cell> neighbors = new LinkedHashSet<>();
 
     final int row = cell.getRow();
@@ -81,25 +86,44 @@ public class FieldPanel extends JPanel implements ActionListener {
     if (row < NUM_ROWS-1 && col < NUM_COLS -1) neighbors.add(cells[row+1][col+1]);
 
     cell.setNeighbors(neighbors);
-    if (random.nextFloat() < 0.15) {
-      cell.markAsType(LiveCell.class);
-      cell.setColor(CellProperties.Live.COLOR);
-    } else {
-      cell.markAsType(DeadCell.class);
-      cell.setColor(CellProperties.Dead.COLOR);
-    }
+  }
+
+  private void seedField(double threshold) {
+    getField().streamCells().forEach(c -> {
+      c.unmarkAsAllTypes();
+      if (random.nextFloat() < threshold) {
+        c.markAsType(LiveCell.class);
+        c.setColor(CellProperties.Live.COLOR);
+      } else {
+        c.markAsType(DeadCell.class);
+        c.setColor(CellProperties.Dead.COLOR);
+      }
+    });
   }
 
   private Field getField() {
     return jalse.getEntityAsType(Field.ID, Field.class);
   }
 
+  public void start() {
+    timer.start();
+  }
+
+  public void pause() {
+    timer.stop();
+  }
+
+  public void randomizeField() {
+    timer.stop();
+    seedField(DEFAULT_THRESHOLD);
+    repaint();
+  }
+
   @Override
   protected void paintComponent(final Graphics g) {
     super.paintComponent(g);
 
-    final Field field = getField();
-    field.streamCells().forEach(c -> drawElement(g, c));
+    getField().streamCells().forEach(c -> drawElement(g, c));
     Toolkit.getDefaultToolkit().sync();
   }
 
