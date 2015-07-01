@@ -43,12 +43,25 @@ public class FieldPanel extends JPanel implements ActionListener {
 
   public FieldPanel() {
     random = new Random();
+
+    // Manually ticked JALSE.
     jalse = new DefaultJALSE.Builder().setManualEngine().build();
+
+    // Create Field and Cells.
     createEntities();
+
+    // Size to Cell size * NUM_ROWS by Cell size * NUM_COLS.
     setPreferredSize(getField().getSize());
+
+    // Create timer for ticking and rendering (30 FPS).
     timer = new Timer(DEFAULT_SPEED, this);
   }
 
+  private Field getField() {
+    return jalse.getEntityAsType(Field.ID, Field.class);
+  }
+
+  /** Create Cell entities that make up the field and setup each Cell with neighbors and an initial state. */
   private void createEntities() {
     final Field field = jalse.newEntity(Field.ID, Field.class);
     final Cell[][] cells = new Cell[NUM_ROWS][NUM_COLS];
@@ -64,55 +77,72 @@ public class FieldPanel extends JPanel implements ActionListener {
         cells[row][col] = cell;
       }
     }
-    field.streamCells().forEach(c -> setNeighbors(c, cells));
     seedField(DEFAULT_THRESHOLD);
+    field.streamCells().forEach(c -> setNeighbors(c, cells));
     field.scheduleForActor(new Update(), 0, 1000, TimeUnit.MILLISECONDS);
   }
 
-  private void setNeighbors(Cell cell, Cell[][] cells) {
-    Set<Cell> neighbors = new LinkedHashSet<>();
-
-    final int row = cell.getRow();
-    final int col = cell.getCol();
-
-    if (row > 0) neighbors.add(cells[row-1][col]);
-    if (row < NUM_ROWS-1) neighbors.add(cells[row+1][col]);
-    if (col > 0) neighbors.add(cells[row][col-1]);
-    if (col < NUM_COLS-1) neighbors.add(cells[row][col+1]);
-
-    if (row > 0 && col > 0) neighbors.add(cells[row-1][col-1]);
-    if (row > 0 && col < NUM_COLS-1) neighbors.add(cells[row-1][col+1]);
-    if (row < NUM_ROWS-1 && col > 0) neighbors.add(cells[row+1][col-1]);
-    if (row < NUM_ROWS-1 && col < NUM_COLS -1) neighbors.add(cells[row+1][col+1]);
-
-    cell.setNeighbors(neighbors);
-  }
-
+  /** Mark Cell Entities as either LiveCell or DeadCell using random and a threshold value. */
   private void seedField(double threshold) {
-    getField().streamCells().forEach(c -> {
-      c.unmarkAsAllTypes();
+    getField().streamCells().forEach(cell -> {
+      cell.unmarkAsAllTypes();
       if (random.nextFloat() < threshold) {
-        c.markAsType(LiveCell.class);
-        c.setColor(CellProperties.Live.COLOR);
+        cell.markAsType(LiveCell.class);
+        cell.setNextGenStatus(LiveCell.class);
+        cell.setColor(CellProperties.Live.COLOR);
       } else {
-        c.markAsType(DeadCell.class);
-        c.setColor(CellProperties.Dead.COLOR);
+        cell.markAsType(DeadCell.class);
+        cell.setNextGenStatus(DeadCell.class);
+        cell.setColor(CellProperties.Dead.COLOR);
       }
     });
   }
 
-  private Field getField() {
-    return jalse.getEntityAsType(Field.ID, Field.class);
+  /** Set neighbors for each cell based on location. */
+  private void setNeighbors(Cell cell, Cell[][] cells) {
+    final int row = cell.getRow();
+    final int col = cell.getCol();
+    final Set<Cell> neighbors = new LinkedHashSet<>();
+
+    if (row > 0) {
+      neighbors.add(cells[row-1][col]);
+      if (col > 0) {
+        neighbors.add(cells[row-1][col-1]);
+      }
+      if (col < NUM_COLS-1) {
+        neighbors.add(cells[row - 1][col + 1]);
+      }
+    }
+    if (row < NUM_ROWS-1) {
+      neighbors.add(cells[row + 1][col]);
+      if (col > 0) {
+        neighbors.add(cells[row+1][col-1]);
+      }
+      if (col < NUM_COLS -1) {
+        neighbors.add(cells[row+1][col+1]);
+      }
+    }
+    if (col > 0) {
+      neighbors.add(cells[row][col-1]);
+    }
+    if (col < NUM_COLS-1) {
+      neighbors.add(cells[row][col+1]);
+    }
+
+    cell.setNeighbors(neighbors);
   }
 
+  /** Start ticking. **/
   public void start() {
     timer.start();
   }
 
+  /** Pause ticking. **/
   public void pause() {
     timer.stop();
   }
 
+  /** Pauses, randomizes Field Cells and repaint panel. */
   public void randomizeField() {
     timer.stop();
     seedField(DEFAULT_THRESHOLD);
@@ -122,14 +152,17 @@ public class FieldPanel extends JPanel implements ActionListener {
   @Override
   protected void paintComponent(final Graphics g) {
     super.paintComponent(g);
-
+    // Draw cells.
     getField().streamCells().forEach(c -> drawElement(g, c));
+    // Sync (Linux fix).
     Toolkit.getDefaultToolkit().sync();
   }
 
   @Override
   public void actionPerformed(ActionEvent e) {
+    // Tick for JALSE ManualEngine.
     jalse.resume();
+    // Request repaint.
     repaint();
   }
 }
