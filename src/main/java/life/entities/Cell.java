@@ -1,50 +1,52 @@
 package life.entities;
 
+import java.awt.Color;
+import java.awt.Point;
+import java.util.Set;
+
 import jalse.entities.Entity;
 import jalse.entities.annotations.GetAttribute;
 import jalse.entities.annotations.SetAttribute;
 
-import java.awt.*;
-import java.util.Set;
-
 public interface Cell extends Entity {
 
-  @GetAttribute
-  Color getColor();
+    interface DeadCell extends Cell {}
 
-  @GetAttribute
-  Point getPosition();
+    interface LiveCell extends Cell {}
 
-  @GetAttribute
-  Integer getRow();
+    @GetAttribute
+    int getCol();
 
-  @GetAttribute
-  Integer getCol();
+    @GetAttribute
+    Color getColour();
 
-  @GetAttribute
-  Class<? extends Cell> getNextGenStatus();
+    @GetAttribute
+    Set<Cell> getNeighbors();
 
-  @GetAttribute
-  Set<Cell> getNeighbors();
+    @GetAttribute
+    Class<? extends Cell> getNextGenStatus();
 
-  @SetAttribute
-  void setColor(Color color);
+    @GetAttribute
+    Point getPosition();
 
-  @SetAttribute
-  void setPosition(Point position);
+    @GetAttribute
+    int getRow();
 
-  @SetAttribute
-  void setRow(Integer row);
+    @SetAttribute
+    void setCol(int col);
 
-  @SetAttribute
-  void setCol(Integer col);
+    @SetAttribute
+    void setColour(Color colour);
 
-  @SetAttribute
-  void setNextGenStatus(Class<? extends Cell> nextGenStatus);
+    @SetAttribute
+    void setNeighbors(Set<Cell> neighbors);
 
-  @SetAttribute
-  void setNeighbors(Set<Cell> neighbors);
+    @SetAttribute
+    void setNextGenStatus(Class<? extends Cell> nextGenStatus);
 
-  interface DeadCell extends Cell {}
-  interface LiveCell extends Cell {}
+    @SetAttribute
+    void setPosition(Point position);
+
+    @SetAttribute
+    void setRow(int row);
 }
